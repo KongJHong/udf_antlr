@@ -67,6 +67,13 @@ public interface SqlParserVisitor<T> extends ParseTreeVisitor<T> {
 	 */
 	T visitOriginFunctionExpr(SqlParser.OriginFunctionExprContext ctx);
 	/**
+	 * Visit a parse tree produced by the {@code literalValueExpr}
+	 * labeled alternative in {@link SqlParser#expr}.
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	T visitLiteralValueExpr(SqlParser.LiteralValueExprContext ctx);
+	/**
 	 * Visit a parse tree produced by the {@code udfFunctionExpr}
 	 * labeled alternative in {@link SqlParser#expr}.
 	 * @param ctx the parse tree
@@ -185,6 +192,12 @@ public interface SqlParserVisitor<T> extends ParseTreeVisitor<T> {
 	 * @return the visitor result
 	 */
 	T visitWhere_clause(SqlParser.Where_clauseContext ctx);
+	/**
+	 * Visit a parse tree produced by {@link SqlParser#where_link_semi}.
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	T visitWhere_link_semi(SqlParser.Where_link_semiContext ctx);
 	/**
 	 * Visit a parse tree produced by {@link SqlParser#group_by_clause}.
 	 * @param ctx the parse tree

@@ -33,8 +33,8 @@ element : '*'
         ;
 
 expr
-//        : literal_value    (AS? column_alias)?                                               # literalValueExpr
-        : ( ( database_name '.' )? table_name '.' )? column_name  (AS? column_alias)?        # columnNameExpr
+        : literal_value    (AS? column_alias)?                                               # literalValueExpr   // 标准数
+        | ( ( database_name '.' )? table_name '.' )? column_name  (AS? column_alias)?        # columnNameExpr
         | unary_operator expr       (AS? column_alias)?                                      # unaryOperation // 一元运算符
         | expr operator=(ASSIGN|GT|GE|LT|LE|EQUAL|NOT_EQUAL) expr  (AS? column_alias)?       # binaryEqualOrAssignExpr // 二元1类，比较&赋值
         | left=expr operator=(STAR|DIV|DIVIDE|MODULE|PLUS|MINUS) expr   (AS? column_alias)?             # binaryExpr // 二元2类，运算
@@ -66,7 +66,11 @@ joined_clause: table_reference (join_operator table_reference join_constraint)*;
 join_operator:','| NATURAL? ((LEFT|FULL|RIGHT) (OUTER|INNER|CROSS)?)? JOIN;
 join_constraint:(ON expr|USING '(' column_name (',' column_name)* ')');
 //--------------------------------whereClause------------------------------
-where_clause: WHERE expr;
+where_clause: WHERE expr (where_link_semi)*;
+
+where_link_semi : operation=(AND|OR|COMMA) expr
+                | '(' where_link_semi ')'
+                ;
 
 //--------------------------------groupByClause------------------------------
 group_by_clause: GROUP BY expr (',' expr)* (HAVING expr)?;

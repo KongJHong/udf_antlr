@@ -102,6 +102,18 @@ public interface SqlParserListener extends ParseTreeListener {
 	 */
 	void exitOriginFunctionExpr(SqlParser.OriginFunctionExprContext ctx);
 	/**
+	 * Enter a parse tree produced by the {@code literalValueExpr}
+	 * labeled alternative in {@link SqlParser#expr}.
+	 * @param ctx the parse tree
+	 */
+	void enterLiteralValueExpr(SqlParser.LiteralValueExprContext ctx);
+	/**
+	 * Exit a parse tree produced by the {@code literalValueExpr}
+	 * labeled alternative in {@link SqlParser#expr}.
+	 * @param ctx the parse tree
+	 */
+	void exitLiteralValueExpr(SqlParser.LiteralValueExprContext ctx);
+	/**
 	 * Enter a parse tree produced by the {@code udfFunctionExpr}
 	 * labeled alternative in {@link SqlParser#expr}.
 	 * @param ctx the parse tree
@@ -303,6 +315,16 @@ public interface SqlParserListener extends ParseTreeListener {
 	 * @param ctx the parse tree
 	 */
 	void exitWhere_clause(SqlParser.Where_clauseContext ctx);
+	/**
+	 * Enter a parse tree produced by {@link SqlParser#where_link_semi}.
+	 * @param ctx the parse tree
+	 */
+	void enterWhere_link_semi(SqlParser.Where_link_semiContext ctx);
+	/**
+	 * Exit a parse tree produced by {@link SqlParser#where_link_semi}.
+	 * @param ctx the parse tree
+	 */
+	void exitWhere_link_semi(SqlParser.Where_link_semiContext ctx);
 	/**
 	 * Enter a parse tree produced by {@link SqlParser#group_by_clause}.
 	 * @param ctx the parse tree

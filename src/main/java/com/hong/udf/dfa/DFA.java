@@ -64,7 +64,7 @@ public class DFA {
 				"self=" + self.getText() +
 				", args=[" + args.stream().map(RuleContext::getText).collect(Collectors.joining(",")) +
 				"], columns=[" + columns.stream().map(RuleContext::getText).collect(Collectors.joining(",")) +
-				", isAll=" + isAll +
+				"], isAll=" + isAll +
 				'}';
 	}
 }
