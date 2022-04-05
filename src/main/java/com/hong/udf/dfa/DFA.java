@@ -5,6 +5,8 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 import lombok.experimental.Accessors;
 import org.antlr.v4.runtime.RuleContext;
+import org.antlr.v4.runtime.tree.ParseTree;
+import org.antlr.v4.runtime.tree.TerminalNode;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -18,43 +20,45 @@ import java.util.stream.Collectors;
 @NoArgsConstructor
 public class DFA {
 
-	private SqlParser.ExprContext self;
-	private List<SqlParser.ExprContext> args;
-	private List<SqlParser.ColumnNameExprContext> columns = new ArrayList<>();
+	private SqlParser.UdfFunctionExprContext self;
+	private List<SqlParser.ExprContext> args;  // 完整参数
+	private List<ParseTree> columns = new ArrayList<>(); // 参数拆解
 
 	private boolean isAll = false;
 
-	public DFA(SqlParser.ExprContext ctx) {
-		if (isColumn(ctx)) throw new RuntimeException("禁止常量作为dfa对象");
+	public DFA(SqlParser.UdfFunctionExprContext ctx) {
+		if (!isUDF(ctx)) throw new RuntimeException("禁止常量作为dfa对象");
 
 		this.self = ctx;
-		List<SqlParser.ExprContext> exprs;
 
-		if (isUdf(ctx)) {
-			exprs = ((SqlParser.UdfFunctionExprContext) ctx).expr();
-			this.isAll = ((SqlParser.UdfFunctionExprContext) ctx).STAR() != null;
-		} else if (isBinaryF(ctx)) exprs = ((SqlParser.BinaryExprContext) ctx).expr();
-		else exprs = ((SqlParser.BinaryExprContext) ctx).expr();
+		List<SqlParser.ExprContext> exprs = ctx.expr();
 
+		this.isAll = ctx.STAR() != null;
 		this.args = exprs;
-		for (SqlParser.ExprContext e : exprs) {
-			if (isColumn(e)) {
-				this.columns.add((SqlParser.ColumnNameExprContext) e);
 
+		for (SqlParser.ExprContext expr: exprs) {
+			if (isUDF(expr) || isORIGIN(expr)) {
+				this.columns.add(expr);
+				continue;
+			}
+
+			final List<ParseTree> children = expr.children;
+			for (ParseTree e: children) {
+				if (!isTerminal(e)) this.columns.add(e);
 			}
 		}
 	}
 
-	private boolean isColumn(SqlParser.ExprContext ctx) {
-		return ctx instanceof SqlParser.ColumnNameExprContext;
+	private boolean isTerminal(ParseTree parseTree) {
+		return parseTree instanceof TerminalNode;
 	}
 
-	private boolean isUdf(SqlParser.ExprContext ctx) {
+	private boolean isUDF(SqlParser.ExprContext ctx) {
 		return ctx instanceof SqlParser.UdfFunctionExprContext;
 	}
 
-	private boolean isBinaryF(SqlParser.ExprContext ctx) {
-		return ctx instanceof SqlParser.BinaryExprContext;
+	private boolean isORIGIN(SqlParser.ExprContext ctx) {
+		return ctx instanceof SqlParser.OriginFunctionExprContext;
 	}
 
 
@@ -63,7 +67,7 @@ public class DFA {
 		return "DFA{" +
 				"self=" + self.getText() +
 				", args=[" + args.stream().map(RuleContext::getText).collect(Collectors.joining(",")) +
-				"], columns=[" + columns.stream().map(RuleContext::getText).collect(Collectors.joining(",")) +
+				"], columns=[" + columns.stream().map(ParseTree::getText).collect(Collectors.joining(",")) +
 				"], isAll=" + isAll +
 				'}';
 	}

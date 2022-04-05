@@ -21,9 +21,9 @@ public class SqlListener extends SqlParserBaseListener {
 
 	private String finalSql;
 
-	private Map<String, String> paramsMap = new HashMap<>();
-
 	private Set<String> elements = new LinkedHashSet<>();
+
+	private ResultEntryHandler resultHandler = new ResultEntryHandler();
 
 
 	private static Map<Class<?>, ClauseHandler> executeMap = new HashMap<>();
@@ -48,15 +48,15 @@ public class SqlListener extends SqlParserBaseListener {
 
 		sb.append(ctx.SELECT().getText()).append(" ");
 
-
-		for (ParseTree node: children) {
+		for (ParseTree node : children) {
+			// TODO 迟早要改
 			if (node instanceof SqlParser.Element_clauseContext) {
-				sb.append(String.join(",",elements)).append(" ");
+				sb.append(String.join(",", elements)).append(" ");
 				continue;
 			}
 
 			ClauseHandler handler = executeMap.get(node.getClass());
-			if (handler != null)sb.append(handler.handle(node)).append(" ");
+			if (handler != null) sb.append(handler.handle(node)).append(" ");
 		}
 
 
@@ -65,16 +65,35 @@ public class SqlListener extends SqlParserBaseListener {
 	}
 
 	@Override
-	public void enterElement_clause(SqlParser.Element_clauseContext ctx) {
-		final List<ParseTree> children = ctx.children;
-		int pNum = 0;
-		for (ParseTree node : children) {
-			if (node instanceof SqlParser.ElementContext) {
-				paramsMap.put("p" + pNum, node.getText());
-				pNum++;
-			}
+	public void exitElement(SqlParser.ElementContext ctx) {
 
+		resultHandler.add(handleRealEntry(ctx));
+
+		if (ctx.expr() != null && ctx.expr() instanceof SqlParser.BinaryExprContext) {
+			SqlParser.BinaryExprContext binaryCtx = (SqlParser.BinaryExprContext) ctx.expr();
+			for (ParseTree node : binaryCtx.children) {
+				if (node instanceof SqlParser.UdfFunctionExprContext) return;
+			}
+			elements.add(handleAlias(ctx));
+			return;
 		}
+
+
+		if (ctx.expr() != null && ctx.expr() instanceof SqlParser.UdfFunctionExprContext) {
+			final List<SqlParser.ExprContext> expr = ((SqlParser.UdfFunctionExprContext) ctx.expr()).expr();
+			for (SqlParser.ExprContext e:expr) {
+				if (e instanceof SqlParser.OriginFunctionExprContext)elements.add(e.getText());
+			}
+			return;
+		}
+
+
+		if (ctx.expr() != null && !(ctx.expr() instanceof SqlParser.UdfFunctionExprContext)) {
+			elements.add(handleAlias(ctx));
+			return;
+		}
+
+
 	}
 
 	@Override
@@ -82,46 +101,54 @@ public class SqlListener extends SqlParserBaseListener {
 		manager.input(ctx);
 	}
 
-	@Override
-	public void exitOriginFunctionExpr(SqlParser.OriginFunctionExprContext ctx) {
-		if (ctx.column_alias() != null) {
-			String text = ctx.getText();
-			int end = text.length();
-			if (ctx.AS() != null) end = (end - ctx.AS().getText().length());
-			text = text.substring(0,end  - ctx.column_alias().getText().length());
-			elements.add(text + " AS " + ctx.column_alias().getText());
-		} else {
-			elements.add(ctx.getText());
-		}
-
-	}
 
 	@Override
 	public void exitColumnNameExpr(SqlParser.ColumnNameExprContext ctx) {
-		if (ctx.getParent() instanceof SqlParser.OriginFunctionExprContext)return;
+		if (ctx.getParent() instanceof SqlParser.OriginFunctionExprContext) return;
 		elements.add(ctx.getText());
 	}
 
 
+	private String handleAlias(SqlParser.ElementContext ctx) {
+		if (ctx.column_alias() != null) {
+			String text = ctx.getText();
+			int end = text.length();
+			if (ctx.AS() != null) end = (end - ctx.AS().getText().length());
+			text = text.substring(0, end - ctx.column_alias().getText().length());
+			return text + " AS " + ctx.column_alias().getText();
+		} else {
+			return ctx.getText();
+		}
+	}
 
+	private ResultEntry handleRealEntry(SqlParser.ElementContext ctx) {
+		ResultEntry entry = new ResultEntry();
+		if (ctx.column_alias() != null) entry.setAlias(ctx.column_alias().getText());
 
+		if (ctx.expr() != null) {
+			entry.setReal(ctx.expr().getText());
+			if (ctx.AS() != null)entry.setAlias(ctx.column_alias().getText());
+			//TODO 还有一个dfaManager
+//			entry.setDfaManager(manager);
+//			if (ctx.expr() instanceof SqlParser.UdfFunctionExprContext) {
+//				entry.setHasUdf(true);
+//			}
+//
+			if (ctx.expr() instanceof SqlParser.BinaryExprContext) {
+				final List<ParseTree> children = ctx.expr().children;
+				for (ParseTree node : children) {
+					if (node instanceof SqlParser.UdfFunctionExprContext) {
+						entry.setDfaManager(manager);
+						break;
+					}
+				}
+			}
 
-	/**
-	 * 传进来的应该是一个UdfFunctionExprContext<br>
-	 * 这里要编程ColumnNameContext
-	 *
-	 * @param ctx       UdfFunctionExprContext
-	 * @param node
-	 * @param tokenName
-	 * @return
-	 */
-	private ParseTree createColumn(SqlParser.ExprContext ctx, ParseTree node, String tokenName) {
-		/*
-		 * ColumnNameContext->Column_nameContext->Any_nameContext
-		 */
-//		SqlParser.ExprContext
+			if (ctx.expr() instanceof SqlParser.UdfFunctionExprContext) {
+				entry.setDfaManager(manager);
+			}
+		}
 
-
-		return null;
+		return entry;
 	}
 }

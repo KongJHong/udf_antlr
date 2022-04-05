@@ -18,13 +18,30 @@
 
 **下推自动机设计**
 
+构造下推自动机
 
+**结果entry**
 
+```
+select e,1+udfA(c-udfB(b),f),udfC(c),CONCAT(a,\'++\') as cc from t_a where a=1 and b=3;
+```
 
+预先构造一个结果集映射关系ResultEntryTemplate，包含原始列，如e,udf(xxx),CONCAT(a,'++') as cc，别名列cc，
+
+1. e-->set.get(e)
+2. udf(xxx)执行对应的下推自动机
+
+怎么生成包含elemnt-udf对应的dfaManager？
 
 
 
 有udf的，抽column(带as别名)，拼回去，相当于把element的结构改了
+
+
+
+现在
+
+
 
 
 

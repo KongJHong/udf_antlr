@@ -29,25 +29,25 @@ element_clause: element (',' element)*;
 
 element : '*'
         | table_name '.' '*'
-        | expr
+        | expr (AS? column_alias)?
         ;
 
 expr
-        : literal_value    (AS? column_alias)?                                               # literalValueExpr   // 标准数
-        | ( ( database_name '.' )? table_name '.' )? column_name  (AS? column_alias)?        # columnNameExpr
-        | unary_operator expr       (AS? column_alias)?                                      # unaryOperation // 一元运算符
-        | expr operator=(ASSIGN|GT|GE|LT|LE|EQUAL|NOT_EQUAL) expr  (AS? column_alias)?       # binaryEqualOrAssignExpr // 二元1类，比较&赋值
-        | left=expr operator=(STAR|DIV|DIVIDE|MODULE|PLUS|MINUS) expr   (AS? column_alias)?             # binaryExpr // 二元2类，运算
+        : literal_value                                                  # literalValueExpr   // 标准数
+        | ( ( database_name '.' )? table_name '.' )? column_name          # columnNameExpr
+        | unary_operator expr                                             # unaryOperation // 一元运算符
+        | expr operator=(ASSIGN|GT|GE|LT|LE|EQUAL|NOT_EQUAL) expr         # binaryEqualOrAssignExpr // 二元1类，比较&赋值
+        | left=expr operator=(STAR|DIV|DIVIDE|MODULE|PLUS|MINUS) expr               # binaryExpr // 二元2类，运算
 //        | left=expr operator=(PLUS|MINUS) right=expr     (AS? column_alias)?                 # binaryCalcSecond
-        | origin_function_name '(' (DISTINCT? expr (',' expr)* |STAR)?   ')'  (AS? column_alias)?   # originFunctionExpr   // ※方法  (系统自带/udf)
-        | udf_function_name '(' (DISTINCT? expr (',' expr)* |STAR)?   ')'  (AS? column_alias)?   # udfFunctionExpr   // ※方法  (系统自带/udf)
-        | '(' expr ')'             (AS? column_alias)?                                        # innerExpr
-        | CAST '(' expr AS type_name ')'  (AS? column_alias)?                                # castExpr
-        | expr IS NOT expr     (AS? column_alias)?                                           # isNotExpr
-        | expr NOT? BETWEEN expr AND expr  (AS? column_alias)?                               # betweenExpr
-        | expr NOT? IN ('('(select_stmt|expr(',' expr)*)?')'|(database_name DOT)? table_name)   (AS? column_alias)?  # inMethodExpr
-        | (NOT? EXISTS)? '(' select_stmt ')'   (AS? column_alias)?                           # existsExpr
-        | CASE expr? (WHEN expr THEN expr)+ (ELSE expr)? END   (AS? column_alias)?           # predicateExpr
+        | origin_function_name '(' (DISTINCT? expr (',' expr)* |STAR)?   ')'     # originFunctionExpr   // ※方法  (系统自带/udf)
+        | udf_function_name '(' (DISTINCT? expr (',' expr)* |STAR)?   ')'     # udfFunctionExpr   // ※方法  (系统自带/udf)
+        | '(' expr ')'                                                     # innerExpr
+        | CAST '(' expr AS type_name ')'                                  # castExpr
+        | expr IS NOT expr                                               # isNotExpr
+        | expr NOT? BETWEEN expr AND expr                               # betweenExpr
+        | expr NOT? IN ('('(select_stmt|expr(',' expr)*)?')'|(database_name DOT)? table_name)     # inMethodExpr
+        | (NOT? EXISTS)? '(' select_stmt ')'                             # existsExpr
+        | CASE expr? (WHEN expr THEN expr)+ (ELSE expr)? END            # predicateExpr
         ;   // 各种expr
 
 

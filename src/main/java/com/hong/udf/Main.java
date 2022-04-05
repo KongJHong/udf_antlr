@@ -3,6 +3,7 @@ package com.hong.udf;
 import com.hong.udf.antlr.SqlLexer;
 import com.hong.udf.antlr.SqlParser;
 import com.hong.udf.config.MybatisConfig;
+import com.hong.udf.custom.ResultEntryHandler;
 import com.hong.udf.custom.SqlListener;
 import com.hong.udf.dao.UserMapper;
 import com.hong.udf.entity.User;
@@ -15,7 +16,9 @@ import org.junit.After;
 import org.junit.Test;
 
 import java.sql.ResultSet;
+import java.sql.ResultSetMetaData;
 import java.sql.SQLException;
+import java.util.List;
 
 /**
  * Description     :
@@ -32,8 +35,9 @@ public class Main {
 	@SuppressWarnings("all")
 	@Test
 	public void demo1() throws SQLException {
-		String sql = "select udfA(id),age, concat(name, \'xxxx\') as cc from user limit 10;";
-//		String sql = "select e,udfA(a+c-udfB(b)),udfC(c),CONCAT(a,\'++\') as cc from t_a where a=1 and b=3;";
+//		String sql = "select udfA(id),age, concat(name, \'xxxx\') as cc from user limit 10;";
+//		String sql = "select e,1+udfA(c-udfB(b),f),udfC(udfB(a,b,c)),udfB(CONCAT(C,\'++\')),CONCAT(a,\'++\') as cc from t_a where a=1 and b=3;";
+		String sql = "select age,udfA(age),udfB(udfC(name)),udfC(CONCAT(name,'++'),id),CONCAT(name,\'++\') as cc from user limit 2";
 		ANTLRInputStream input = new ANTLRInputStream(sql);
 		SqlLexer lexer = new SqlLexer(input);
 		CommonTokenStream tokens = new CommonTokenStream(lexer);
@@ -42,16 +46,25 @@ public class Main {
 		ParseTreeWalker walker = new ParseTreeWalker();
 		SqlListener listener = new SqlListener();
 		walker.walk(listener, tree);
-		System.out.println(listener.getFinalSql());
+
+//		System.out.println(listener.getManager());
+//		System.out.println(listener.getResultHandler().getResultEntries());
+//		System.out.println(listener.getFinalSql());
 
 		String finalSql = listener.getFinalSql();
 		final ResultSet resultSet = JDBCUtil.executeQuery(finalSql);
+		ResultSetMetaData rsmd = resultSet.getMetaData();
 
+
+		ResultEntryHandler resultHandler = listener.getResultHandler();
+		System.out.println(finalSql);
 		while (resultSet.next()) {
-			Integer id = resultSet.getInt("id");
-			Integer age = resultSet.getInt("age");
-			String cc = resultSet.getString("cc");
-			System.out.println(id+"--"+cc+"--"+age);
+			final List<Object> objects = resultHandler.handleResult(resultSet);
+			System.out.println(objects);
+//			Integer id = resultSet.getInt("id");
+//			Integer age = resultSet.getInt("age");
+//			String cc = resultSet.getString("cc");
+//			System.out.println(id+"--"+cc+"--"+age);
 
 
 			// 执行下推自动机dfa

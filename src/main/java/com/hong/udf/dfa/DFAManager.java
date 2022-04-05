@@ -1,11 +1,15 @@
 package com.hong.udf.dfa;
 
 import com.hong.udf.antlr.SqlParser;
-import org.antlr.v4.runtime.RuleContext;
-import org.apache.commons.collections.CollectionUtils;
+import com.hong.udf.func.UdfHandler;
+import org.antlr.v4.runtime.tree.ParseTree;
 
+import java.sql.ResultSet;
+import java.sql.SQLException;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 /**
@@ -15,47 +19,46 @@ public class DFAManager {
 
 	List<DFA> stack = new ArrayList<>();
 
-	int cnt = 0;
+	Map<String, Object> resultCache = new HashMap<>();
+
+	private int rowIndex = -1;
 
 	public void input(SqlParser.UdfFunctionExprContext udfExprCtx) {
 		// 从udf开始构造
 		push(new DFA(udfExprCtx));
-		while (cnt < stack.size()) {
-			DFA dfa = stack.get(cnt);
-			List<SqlParser.ExprContext> exprs = dfa.getArgs();
-			for (SqlParser.ExprContext ctx : exprs) {
-				if (isBinary(ctx)) push(new DFA(ctx));
-			}
-			cnt++;
-		}
 	}
 
+	public Object handleResult(ResultSet resultSet, String real, int rowIndex) throws SQLException {
+		if (this.rowIndex == rowIndex) {
+			return resultCache.get(real);
+		}
+		for (int pp = stack.size() - 1; pp >= 0; pp--) {
+			final DFA dfa = stack.get(pp);
+
+			// getSelf获取udf方法名和参数名
+			// 通过rs获取参数，传入udf方法执行，获取结果
+			String funcName = dfa.getSelf().udf_function_name().getText();
+			String dfaName = dfa.getSelf().getText();
+			List<Object> columns = new ArrayList<>(dfa.getColumns().size());
+
+			for (ParseTree node : dfa.getColumns()) {
+				if (node instanceof SqlParser.Column_nameContext || node instanceof SqlParser.OriginFunctionExprContext) {
+					columns.add(resultSet.getObject(node.getText()));
+				} else if (node instanceof SqlParser.UdfFunctionExprContext) {
+					columns.add(resultCache.getOrDefault(node.getText(), null));
+				}
+			}
+
+			resultCache.put(dfaName,  UdfHandler.execute(funcName.toLowerCase(),columns.toArray()));
+		}
+		this.rowIndex = rowIndex;
+		return resultCache.get(real);
+	}
 
 	private void push(DFA dfa) {
 		stack.add(dfa);
 	}
 
-	private boolean isBinary(SqlParser.ExprContext ctx) {
-		return ctx instanceof SqlParser.BinaryExprContext;
-	}
-
-	public List<String> getColumns() {
-		List<String> columns = new ArrayList<>();
-		for (int i = stack.size() - 1; i >= 0; i--) {
-			DFA dfa = stack.get(i);
-			if (dfa.isAll()) {
-				columns.clear();
-				columns.add("*");
-				return columns;
-			}
-
-
-			if (CollectionUtils.isNotEmpty(dfa.getColumns())) {
-				columns.addAll(dfa.getColumns().stream().map(RuleContext::getText).collect(Collectors.toList()));
-			}
-		}
-		return columns;
-	}
 
 	@Override
 	public String toString() {
