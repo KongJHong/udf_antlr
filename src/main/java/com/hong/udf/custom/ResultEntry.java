@@ -15,21 +15,16 @@ import java.sql.SQLException;
 @Data
 @EqualsAndHashCode(exclude = "dfaManager")
 @Accessors(chain = true)
-public class ResultEntry implements Cloneable {
+public class ResultEntry {
 
 	// 别名
 	private String alias;
 
-	// 真实
+	// 真名
 	private String real;
 
-	// 对应的dfa处理器
+	// dfa处理器
 	private DFAManager dfaManager;
-
-	@Override
-	protected Object clone() {
-		return new ResultEntry().setAlias(alias).setReal(real).setDfaManager(dfaManager);
-	}
 
 	/**
 	 * 处理结果
@@ -37,7 +32,9 @@ public class ResultEntry implements Cloneable {
 	public Object getResult(ResultSet resultSet,Integer rowIndex) throws SQLException {
 		// 有dfa处理dfa
 		if (dfaManager != null) return dfaManager.handleResult(resultSet,real,rowIndex);
+		// 没有dfa处理别名
 		if (StringUtils.isNotEmpty(alias))return resultSet.getObject(alias);
+		// 没有别名处理real
 		return resultSet.getObject(real);
 	}
 

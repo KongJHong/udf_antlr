@@ -9,8 +9,9 @@ public class JDBCUtil {
 
 	private static final String DRIVER = "com.mysql.cj.jdbc.Driver";
 	private static final String USERNAME = "root";
-	private static final String URL = "jdbc:mysql://192.168.10.100:3306/test?useSSL=true";
-	private static final String PASSWORD = "123456";
+//	private static final String URL = "jdbc:mysql://192.168.10.100:3306/test?useSSL=true";
+	private static final String URL = "jdbc:mysql:///test?useSSL=true";
+	private static final String PASSWORD = "flyfox#hong123";
 
 
 	private static Connection connection = null;

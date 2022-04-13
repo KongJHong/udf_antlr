@@ -1,5 +1,6 @@
 package com.hong.udf.custom;
 
+import com.hong.udf.dfa.DFAManager;
 import lombok.Data;
 
 import java.sql.ResultSet;
@@ -10,12 +11,14 @@ import java.util.List;
 import java.util.Set;
 
 /**
- * Description     :
+ * Description     : 行处理器
  */
 @Data
 public class ResultEntryHandler {
 
 	Set<ResultEntry> resultEntries = new LinkedHashSet<>();
+
+	private DFAManager dfaManager;
 
 	private int rowIndex = 0;
 

@@ -7,6 +7,8 @@ import com.hong.udf.custom.ResultEntryHandler;
 import com.hong.udf.custom.SqlListener;
 import com.hong.udf.dao.UserMapper;
 import com.hong.udf.entity.User;
+import com.hong.udf.func.IUdfFunction;
+import com.hong.udf.func.UdfHandler;
 import com.hong.udf.utils.JDBCUtil;
 import org.antlr.v4.runtime.ANTLRInputStream;
 import org.antlr.v4.runtime.CommonTokenStream;
@@ -15,6 +17,9 @@ import org.antlr.v4.runtime.tree.ParseTreeWalker;
 import org.junit.After;
 import org.junit.Test;
 
+import java.net.MalformedURLException;
+import java.net.URL;
+import java.net.URLClassLoader;
 import java.sql.ResultSet;
 import java.sql.ResultSetMetaData;
 import java.sql.SQLException;
@@ -37,7 +42,7 @@ public class Main {
 	public void demo1() throws SQLException {
 //		String sql = "select udfA(id),age, concat(name, \'xxxx\') as cc from user limit 10;";
 //		String sql = "select e,1+udfA(c-udfB(b),f),udfC(udfB(a,b,c)),udfB(CONCAT(C,\'++\')),CONCAT(a,\'++\') as cc from t_a where a=1 and b=3;";
-		String sql = "select age,udfA(age),udfB(udfC(name)),udfC(CONCAT(name,'++'),id),CONCAT(name,\'++\') as cc from user limit 2";
+		String sql = "select age,udfA(age),udfB(udfC(name)),udfC(CONCAT(name,'++'),id),CONCAT(name,\'++\') as cc from user";
 		ANTLRInputStream input = new ANTLRInputStream(sql);
 		SqlLexer lexer = new SqlLexer(input);
 		CommonTokenStream tokens = new CommonTokenStream(lexer);
@@ -47,7 +52,7 @@ public class Main {
 		SqlListener listener = new SqlListener();
 		walker.walk(listener, tree);
 
-//		System.out.println(listener.getManager());
+		System.out.println(listener.getManager());
 //		System.out.println(listener.getResultHandler().getResultEntries());
 //		System.out.println(listener.getFinalSql());
 
@@ -80,5 +85,30 @@ public class Main {
 		UserMapper userMapper = MybatisConfig.getMapper(UserMapper.class);
 		final User user = userMapper.selectById(1);
 		System.out.println(user);
+	}
+
+	@Test
+	public void subClasses() {
+//		List<IUdfFunction> funcSet = new ArrayList<>();
+
+
+		String jarPath = "file:///D:\\OpenSource\\PackageDemo\\target\\pp-1.0.jar";
+		String classPath = "com.pp.UDFOuter";
+
+		try {
+			ClassLoader cl = new URLClassLoader(new URL[]{new URL(jarPath)});
+			Class<?> clazz = cl.loadClass(classPath);
+
+			if (clazz.newInstance() instanceof IUdfFunction) {
+				// TODO 添加到缓存列表中
+				UdfHandler.put(clazz.getSimpleName().toLowerCase(),(IUdfFunction)clazz.newInstance());
+				//put(clazz.getSimpleName().toLowerCase(),(IUdfFunction)clazz.newInstance())
+				System.out.println("命中");
+			}
+
+		} catch (MalformedURLException | ClassNotFoundException | IllegalAccessException | InstantiationException e) {
+			e.printStackTrace();
+		}
+
 	}
 }
